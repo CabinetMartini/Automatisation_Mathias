@@ -1,7 +1,7 @@
 import pdfplumber
 import re
 import pandas as pd
-
+from Excel_Int import change_cell
 def extraire_donnees_surlignees(pdf_path):
     """
     Extrait les données pour :
@@ -129,7 +129,7 @@ def sanitize_donnes(donnes: dict) -> dict:
     sanitized = {}
     for key, subdict in donnes.items():
         # Pour la clé "Date" qui n'est pas un sous-dictionnaire, on la conserve telle quelle
-        if key == "Date":
+        if key == "Date" or key == "Nom du fichier":
             if subdict:
                 sanitized[key] = subdict
             continue
@@ -156,12 +156,12 @@ def sanitize_donnes(donnes: dict) -> dict:
     
 
 if __name__ == "__main__":
-    pdf_path = "sample.pdf"
+    pdf_path = "GLR5 FC2.pdf"
     donnees = extraire_donnees_surlignees(pdf_path)
     donnees = sanitize_donnes(donnees)
-    sauvegarder_resultats(donnees)
+    change_cell('file.xlsx', donnees)
 
-"""     for cat, vals in donnees.items():
-        print(f"--- {cat} ---")
-        print(vals)
- """
+
+    #print(donnees["Date"])    
+    #sauvegarder_resultats(donnees)
+

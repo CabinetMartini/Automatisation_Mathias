@@ -1,5 +1,6 @@
 import pdfplumber
 import re
+import pandas as pd
 
 def assign_values(target, numbers, keys=("TAC", "NET", "%", "P.M.")):
     """
@@ -25,7 +26,7 @@ def process_total_line(ligne, resultats, regex_nombres):
             assign_values(resultats["TOTAL Kiosk"], nombres)
     elif len(nombres) == 9:
         if not resultats["TOTAL PRODUITS NET"]:
-            resultats["TOTAL PRODUITS NET"]["PRODUITS_NET_ALIMENTAIRES"] = nombres[0]
+            resultats["TOTAL PRODUITS NET"]["TAC"] = nombres[0]
     else:
         if not resultats["TOTAL"] and len(nombres) >= 4:
             assign_values(resultats["TOTAL"], nombres)
@@ -65,7 +66,6 @@ def extraire_donnees_surlignees(pdf_path):
     }
     
     resultats = {
-        "Date": None,
         "Sur place": {},
         "A emporter": {},
         "McDrive": {},
@@ -73,7 +73,9 @@ def extraire_donnees_surlignees(pdf_path):
         "Kiosk sur place": {},
         "Kiosk à emporter": {},
         "TOTAL Kiosk": {},
-        "TOTAL PRODUITS NET": {}
+        "TOTAL PRODUITS NET": {},
+        "Date": None,
+        "Nom du fichier": pdf_path
     }
     
     regex_nombres = r'\d+(?:[\.,]\d+)?'
@@ -109,10 +111,60 @@ def extraire_donnees_surlignees(pdf_path):
     
     return resultats
 
+
+def sauvegarder_resultats(resultats, nom_fichier="resultats_extraction.csv"):
+    """
+    Sauvegarde les résultats dans un fichier CSV.
+    """
+    df = pd.DataFrame.from_dict(resultats,orient='columns')
+    df_transposed = df.T
+    print(df_transposed)
+    df_transposed.index.name = 'Catégorie'
+    df_transposed.to_csv(nom_fichier)
+    print(f"\nRésultats sauvegardés dans {nom_fichier}")
+
+
+def sanitize_donnes(donnes: dict) -> dict:
+    """
+    Sanitize extracted data:
+      - Supprime les entrées vides du dictionnaire principal.
+      - Dans chaque sous-dictionnaire, supprime les valeurs vides.
+      - Retire les clés "NET" et "%" (insensibles à la casse) de chaque sous-dictionnaire.
+    """
+    sanitized = {}
+    for key, subdict in donnes.items():
+        # Pour la clé "Date" qui n'est pas un sous-dictionnaire, on la conserve telle quelle
+        if key == "Date" or key == "Nom du fichier":
+            if subdict:
+                sanitized[key] = subdict
+            continue
+        
+        # On s'assure que subdict est non vide
+        if not subdict:
+            continue
+
+        new_subdict = {}
+        for subkey, value in subdict.items():
+            # Ignore les valeurs vides
+            if not value:
+                continue
+            # On retire les clés "NET" et "%" (on ignore la casse)
+            if subkey.upper() in ("NET", "%"):
+                continue
+            new_subdict[subkey] = value
+
+        if new_subdict:
+            sanitized[key] = new_subdict
+
+    return sanitized
+
+
 if __name__ == "__main__":
-    pdf_path = "sample.pdf"
+    pdf_path = "GLR5 FC2.pdf"
     donnees = extraire_donnees_surlignees(pdf_path)
-    
+    donnees = sanitize_donnes(donnees)
+    sauvegarder_resultats(donnees)
+
     for cat, vals in donnees.items():
         print(f"--- {cat} ---")
         print(vals)
