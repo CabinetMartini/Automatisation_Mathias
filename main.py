@@ -36,6 +36,7 @@ def extraire_donnees_surlignees(pdf_path):
         "TOTAL Kiosk": {},
         "TOTAL PRODUITS NET": {},
         "Date": None,
+        "Nom du fichier": pdf_path
     }
     
     regex_nombres = r'\d+(?:[\.,]\d+)?'
