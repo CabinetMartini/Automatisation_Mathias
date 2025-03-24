@@ -1,5 +1,6 @@
 import pdfplumber
 import re
+import pandas as pd
 
 def extraire_donnees_surlignees(pdf_path):
     """
@@ -104,9 +105,21 @@ def extraire_donnees_surlignees(pdf_path):
                         break
     return resultats
 
+
+def sauvegarder_resultats(resultats, nom_fichier="resultats_extraction.csv"):
+    """
+    Sauvegarde les résultats dans un fichier CSV.
+    """
+    df = pd.DataFrame.from_dict(resultats, orient='index')
+    df.index.name = 'Catégorie'
+    df.to_csv(nom_fichier)
+    print(f"Résultats sauvegardés dans {nom_fichier}")
+
 if __name__ == "__main__":
     pdf_path = "sample.pdf"
     donnees = extraire_donnees_surlignees(pdf_path)
+
+    sauvegarder_resultats(donnees)
     
     for cat, vals in donnees.items():
         print(f"--- {cat} ---")
