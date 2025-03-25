@@ -1,5 +1,7 @@
-import pandas as pd
 import openpyxl
+import datetime
+import locale
+
 
 def split_date(date):
     month, year = date.split(" ")
@@ -19,20 +21,16 @@ def change_cell(file_xlsx, donnes):
         "Paniers moyens à emporter": donnes["A emporter"]["P.M."],
         "Paniers moyens total": donnes["TOTAL"]["P.M."],
     }
+    print(data_insert)
 
     month, year =split_date(donnes["Date"])
-    #print(f"month: {month}, year: {year}")
     tab_name = donnes["Nom du fichier"].replace(" FC2.pdf", "")
-    #print(f"tab_name: {tab_name}")
 
     wb = openpyxl.load_workbook(file_xlsx)
     ws = wb.active
 
-
     rows = find_range_val_data_insert(ws)
-    print(f"rows: {rows}")
     col = find_name_col(ws,tab_name)
-    print(f"col: {col}")
 
     # Pour chaque clé du dictionnaire, on récupère les coordonnées de début et de fin de la plage fusionnée
     for key, value in rows.items():
@@ -50,23 +48,21 @@ def change_cell(file_xlsx, donnes):
     # On cherche les données des plages fusionnées
     for key, value in rows.items():
         min_cell, max_cell = value
-        print(f"Pour '{key}': min_cell: {min_cell}, max_cell: {max_cell}")
+        #print(f"Pour '{key}': min_cell: {min_cell}, max_cell: {max_cell}")
         for i in range(int(min_cell[1:]), int(max_cell[1:]) + 1):
-            #print(f"min : {int(min_cell[1:])}")
-            #print(f"max : {int(max_cell[1:])}")
-            print(f"month: {month}, {month.upper()}")
-            if ws[f"{min_cell[0]}{i}"].value == month or ws[f"{min_cell[0]}{i}"].value == month.upper(): 
-                print(f"Trouvé à la ligne {i} pour {key}")
+            full_month, month_number_str = normalize_month(month)
+            if (ws[f"{min_cell[0]}{i}"].value == month or ws[f"{min_cell[0]}{i}"].value == month.upper() or ws[f"{min_cell[0]}{i}"].value == full_month or ws[f"{min_cell[0]}{i}"].value == month_number_str):                
+                #print(f"Trouvé à la ligne {i} pour {key}")
                 current_col_letter = min_cell[0]
-                print(f"current_col_letter: {current_col_letter}")
+                #print(f"current_col_letter: {current_col_letter}")
                 next_col = chr(ord(current_col_letter) + 1)
-                print(f"next_col: {next_col}")
+                #print(f"next_col: {next_col}")
                 target_cell = f"{next_col}{i}"
                 ws[target_cell].value = data_insert[key]
                 print(f"Valeur {data_insert[key]} placée en {target_cell}")
 
 
-            print(f"Valeur actuelle : {ws[f'{min_cell[0]}{i}'].value}")
+            #print(f"Valeur actuelle : {ws[f'{min_cell[0]}{i}'].value}")
         
     wb.save(file_xlsx)
 
@@ -112,6 +108,52 @@ def find_name_col(ws, name_col):
 
 
 
+def normalize_month(month_value):
+    """
+    Normalise la valeur du mois qui peut être soit un nom complet (ex. "Février")
+    soit un numéro sous forme de chaîne (ex. "02"). Renvoie un tuple composé du nom
+    complet du mois (en français) et du numéro du mois formaté sur 2 chiffres.
+    """
+    # Dictionnaire de correspondance : clé en minuscule
+    month_mapping = {
+        "1": 1, "01": 1, "janvier": 1,
+        "2": 2, "02": 2, "février": 2, "fevrier": 2,
+        "3": 3, "03": 3, "mars": 3,
+        "4": 4, "04": 4, "avril": 4,
+        "5": 5, "05": 5, "mai": 5,
+        "6": 6, "06": 6, "juin": 6,
+        "7": 7, "07": 7, "juillet": 7,
+        "8": 8, "08": 8, "août": 8, "aout": 8,
+        "9": 9, "09": 9, "septembre": 9,
+        "10": 10, "octobre": 10,
+        "11": 11, "novembre": 11,
+        "12": 12, "décembre": 12, "decembre": 12
+    }
+    
+    # Normalisation de la chaîne
+    month_norm = str(month_value).strip().lower()
+    
+    if month_norm in month_mapping:
+        month_number = month_mapping[month_norm]
+    else:
+        # On tente une conversion directe en entier
+        try:
+            month_number = int(month_norm)
+        except ValueError:
+            raise ValueError(f"Le mois '{month_value}' n'est pas reconnu.")
+    
+    # Optionnel : tenter de définir la locale en français pour obtenir le nom du mois en français
+    try:
+        locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+    except locale.Error:
+        pass  # Si la locale française n'est pas disponible, le nom risque d'être en anglais
+    
+    # Obtenir le nom complet du mois (ex: "février") et le numéro au format 2 chiffres
+    full_month = datetime.date(1900, month_number, 1).strftime('%B')
+    month_str = f"{month_number:02d}"
+    return full_month, month_str
+
+#print(f"full_month: {full_month}, month_number_str: {month_number_str}")
 
 
 
