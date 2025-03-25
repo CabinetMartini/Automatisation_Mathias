@@ -9,22 +9,23 @@ def split_date(date):
 
 
 def change_cell(file_xlsx, donnes):
+    print(donnes)
 
     data_insert = {
-        "Chiffre d'affaires net": donnes["TOTAL PRODUITS NET"]["TAC"],
-        "Transactions sur place": donnes["Sur place"]["TAC"],
-        "Transactions à emporter": donnes["A emporter"]["TAC"],
-        "Transactions Mc Drive": donnes["McDrive"]["TAC"],
-        "Transactions kiosque": donnes["TOTAL Kiosk"]["TAC"],
-        "Transactions totales": donnes["TOTAL"]["TAC"],
-        "Paniers moyens sur place": donnes["Sur place"]["P.M."],
-        "Paniers moyens à emporter": donnes["A emporter"]["P.M."],
-        "Paniers moyens total": donnes["TOTAL"]["P.M."],
+        "Chiffre d'affaires net": float(donnes["TOTAL PRODUITS NET"]["TAC"]),
+        "Transactions sur place": float(donnes["Sur place"]["TAC"]) - float(donnes["Kiosk sur place"]["TAC"]),
+        "Transactions à emporter": float(donnes["A emporter"]["TAC"]) - float(donnes["Kiosk à emporter"]["TAC"]),
+        "Transactions Mc Drive": float(donnes["McDrive"]["TAC"]),
+        "Transactions kiosque": float(donnes["TOTAL Kiosk"]["TAC"]),
+        "Transactions totales": float(donnes["TOTAL"]["TAC"]),
+        "Paniers moyens sur place": float(donnes["Sur place"]["P.M."]),
+        "Paniers moyens à emporter": float(donnes["A emporter"]["P.M."]),
+        "Paniers moyens total": float(donnes["TOTAL"]["P.M."]),
     }
     print(data_insert)
 
     month, year =split_date(donnes["Date"])
-    tab_name = donnes["Nom du fichier"].replace(" FC2.pdf", "")
+    tab_name = donnes["Nom du fichier"].replace(".pdf", "")
 
     wb = openpyxl.load_workbook(file_xlsx)
     ws = wb.active
@@ -52,15 +53,18 @@ def change_cell(file_xlsx, donnes):
         for i in range(int(min_cell[1:]), int(max_cell[1:]) + 1):
             full_month, month_number_str = normalize_month(month)
             if (ws[f"{min_cell[0]}{i}"].value == month or ws[f"{min_cell[0]}{i}"].value == month.upper() or ws[f"{min_cell[0]}{i}"].value == full_month or ws[f"{min_cell[0]}{i}"].value == month_number_str):                
-                #print(f"Trouvé à la ligne {i} pour {key}")
                 current_col_letter = min_cell[0]
-                #print(f"current_col_letter: {current_col_letter}")
                 next_col = chr(ord(current_col_letter) + 1)
-                #print(f"next_col: {next_col}")
-                target_cell = f"{next_col}{i}"
-                ws[target_cell].value = data_insert[key]
-                print(f"Valeur {data_insert[key]} placée en {target_cell}")
 
+                if (f"{next_col}{min_cell}") == year:
+                    target_cell = f"{next_col}{i}"
+                    ws[target_cell].value = data_insert[key]
+                    print(f"Valeur {data_insert[key]} placée en {target_cell}") 
+                elif (f"{chr(ord(current_col_letter) + 2)}{min_cell}") == year:
+                    next_col = chr(ord(current_col_letter) + 1)
+                    target_cell = f"{next_col}{i}"
+                    ws[target_cell].value = data_insert[key]
+                    print(f"Valeur {data_insert[key]} placée en {target_cell}")
 
             #print(f"Valeur actuelle : {ws[f'{min_cell[0]}{i}'].value}")
         
@@ -101,6 +105,7 @@ def find_range_val_data_insert(ws):
 
 
 def find_name_col(ws, name_col):
+    print(name_col)
     for row in ws.iter_rows(min_row=9, max_row=9):
         for cell in row:
             if cell.value == name_col:

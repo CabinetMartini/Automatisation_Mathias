@@ -156,12 +156,8 @@ def sanitize_donnes(donnes: dict) -> dict:
     
 
 if __name__ == "__main__":
-    pdf_path = "GLR5 FC2.pdf"
+    pdf_path = "HTR8.pdf"
     donnees = extraire_donnees_surlignees(pdf_path)
     donnees = sanitize_donnes(donnees)
     change_cell('file.xlsx', donnees)
-
-
-    #print(donnees["Date"])    
-    #sauvegarder_resultats(donnees)
 
